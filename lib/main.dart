@@ -7,86 +7,72 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(title: 'Future/Await 실습', home: HomeScreen());
+    return MaterialApp(title: 'Future/Await 실습', home: MyHomePage());
   }
 }
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+Future<String> fetchMessage() async {
+  await Future.delayed(Duration(seconds: 2));
+  return "데이터 도착! 👏";
+}
 
+Future<String> deleteMessage() async {
+  await Future.delayed(Duration(seconds: 2));
+  return "데이터 삭제! 👏";
+}
+
+class MyHomePage extends StatefulWidget {
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  _MyHomePageState createState() => _MyHomePageState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
-  String resultText = '아직 데이터가 없습니다';
-  bool isLoading = false;
-
-  // Future 사용 (await 없이)
-  Future<void> getDataWithoutAwait() async {
-    print('1. Future 함수 시작!');
-
-    setState(() {
-      resultText = '요청 보냄 (Future)';
-      isLoading = true;
-    });
-    print('2. Future: setState 완료 (로딩 시작)');
-
-    Future.delayed(const Duration(seconds: 2), () {
-      print('4. Future: 2초 지남! 이제 데이터가 도착했어요');
-      setState(() {
-        resultText = '데이터 도착! (Future)';
-        isLoading = false;
-      });
-      print('5. Future: setState 완료 (로딩 종료)');
-    });
-
-    print('3. Future: 함수 종료 (하지만 데이터는 아직 오는 중...)');
-  }
-
-  // await 사용
-  Future<void> getDataWithAwait() async {
-    print('1. await 함수 시작!');
-
-    setState(() {
-      resultText = '요청 보냄 (await)';
-      isLoading = true;
-    });
-    print('2. await: setState 완료 (로딩 시작)');
-
-    await Future.delayed(const Duration(seconds: 2), () {
-      print('4. await: 2초 지남! 이제 데이터가 도착했어요');
-      setState(() {
-        resultText = '데이터 도착! (await)';
-        isLoading = false;
-      });
-      print('5. await: setState 완료 (로딩 종료)');
-    });
-
-    print('6. await: 함수 종료 (모든 처리가 완료됨)');
-  }
+class _MyHomePageState extends State<MyHomePage> {
+  Future<String>? _future;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Future/Await 실습')),
+      appBar: AppBar(title: Text('FutureBuilder 예제')),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (isLoading)
-              const CircularProgressIndicator()
-            else
-              Text(resultText, style: const TextStyle(fontSize: 20)),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: getDataWithoutAwait,
-              child: const Text('Future로 데이터 가져오기'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _future = fetchMessage();
+                    });
+                  },
+                  child: Text('외부 API 데이터 조회'),
+                ),
+                SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      _future = deleteMessage();
+                    });
+                  },
+                  child: Text('로컬 파일 데이터 삭제'),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: getDataWithAwait,
-              child: const Text('await로 데이터 가져오기'),
+            SizedBox(height: 20),
+            FutureBuilder<String>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return CircularProgressIndicator(); // 로딩 중
+                } else if (snapshot.hasError) {
+                  return Text('에러 발생: ${snapshot.error}');
+                } else if (snapshot.hasData) {
+                  return Text('결과: ${snapshot.data}'); // 데이터 도착
+                } else {
+                  return Text('버튼을 눌러서 데이터를 가져오세요');
+                }
+              },
             ),
           ],
         ),
